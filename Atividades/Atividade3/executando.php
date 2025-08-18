@@ -6,6 +6,10 @@ require_once "Calculadora.php";
 require_once "Contato.php";
 require_once "Retangulo.php";
 require_once "Funcionario.php";
+require_once "Item.php";
+require_once "Carrinho.php";
+require_once "Livro.php";
+require_once "Conversor.php";
 
 use Atividade3\Calculadora;
 use Atividade3\Carro;
@@ -14,6 +18,10 @@ use Atividade3\ContaBancaria;
 use Atividade3\Contato;
 use Atividade3\Retangulo;
 use Atividade3\Funcionario;
+use atividade3\Item;
+use atividade3\Carrinho;
+use atividade3\Livro;
+use atividade3\conversor;
 
 $carro = new Carro("VolksWagen", "Gol", "2020");
 $carro->exibirinformacoes();
@@ -48,3 +56,24 @@ echo "\n\nPerímetro: ".$retangulo->calculaPerimetro()."\nÁrea: ".$retangulo->c
 
 $funcionario = new Funcionario("Gustavo", 1000);
 echo "\n\nO novo salário é: R$".$funcionario->reajuste(10);
+
+$item1 = new Item("Batata", 20);
+$item2 = new Item("Arroz", 20);
+
+$carrinho = new Carrinho();
+$carrinho->addItem($item1, 5);
+$carrinho->addItem($item2, 4);
+
+$carrinho->listarItems();
+
+$livros = [new Livro("O menino de pijama lsitrado", 2005, "sla"), new Livro("Pai rico pai pobre", 2024, "tbm n sei")];
+foreach ($livros as $livro) {
+    if (intval(date('Y'))-$livro->getAno()>=15){
+        echo ("\n\nTitulo: ".$livro->getTitulo()."\nAno: ".$livro->getAno()."\nAutor: ".$livro->getAutor());
+    }
+}
+
+$conversor = new Conversor();
+$celsius = $conversor->celsius(4);
+$fahrenheit = $conversor->fahrenheit(4);
+echo "\n\nCelsius: ".$celsius."\nFahrenheit: ".$fahrenheit;
