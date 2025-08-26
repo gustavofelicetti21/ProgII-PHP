@@ -17,7 +17,7 @@ class Display extends Config
     }
 
     public function alteraLayout($layout) {
-        $this->layot = $layot;
+        $this->layot = $layout;
     }
 
     public function getLayout() {
