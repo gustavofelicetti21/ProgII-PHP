@@ -1,5 +1,5 @@
 <?php
-namespace Atividade5\Ex4;
+namespace Atividade6;
 class Funcionario
 {
     public $nome;
