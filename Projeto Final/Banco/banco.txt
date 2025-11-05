@@ -1,0 +1,128 @@
+-- Habilita FKs no SQLite
+PRAGMA foreign_keys = ON;
+
+-- =========================
+-- TABELAS PRINCIPAIS
+-- =========================
+CREATE TABLE clientes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome        TEXT    NOT NULL,
+  cpf         TEXT    NOT NULL UNIQUE,
+  telefone    TEXT,
+  email       TEXT    UNIQUE,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_clientes_nome ON clientes(nome);
+
+CREATE TABLE restaurantes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome        TEXT    NOT NULL,
+  cnpj        TEXT    NOT NULL UNIQUE,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_restaurantes_nome ON restaurantes(nome);
+
+-- Produtos pertencem ao restaurante (composição prática)
+CREATE TABLE produtos (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  restaurante_id INTEGER NOT NULL,
+  nome           TEXT    NOT NULL,
+  descricao      TEXT,
+  preco          REAL    NOT NULL CHECK (preco >= 0),
+  created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_produtos_restaurante ON produtos(restaurante_id);
+CREATE INDEX idx_produtos_nome ON produtos(nome);
+
+-- Ingredientes pertencem ao produto (composição)
+CREATE TABLE produto_ingredientes (
+  produto_id  INTEGER NOT NULL,
+  ingrediente TEXT    NOT NULL,
+  PRIMARY KEY (produto_id, ingrediente),
+  FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
+);
+
+-- Pedidos se associam a cliente e restaurante (histórico preservado)
+CREATE TABLE pedidos (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  cliente_id     INTEGER REFERENCES clientes(id)     ON DELETE SET NULL,
+  restaurante_id INTEGER REFERENCES restaurantes(id) ON DELETE SET NULL,
+  vl_total       REAL    NOT NULL DEFAULT 0 CHECK (vl_total >= 0),
+  created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pedidos_cliente      ON pedidos(cliente_id);
+CREATE INDEX idx_pedidos_restaurante  ON pedidos(restaurante_id);
+CREATE INDEX idx_pedidos_created_at   ON pedidos(created_at);
+
+-- Itens pertencem ao pedido (composição)
+CREATE TABLE itens_pedido (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  pedido_id      INTEGER NOT NULL,
+  produto_id     INTEGER NOT NULL,
+  quantidade     INTEGER NOT NULL CHECK (quantidade > 0),
+  preco_unitario REAL    NOT NULL CHECK (preco_unitario >= 0),
+  preco_total    REAL    NOT NULL CHECK (preco_total >= 0),
+  FOREIGN KEY (pedido_id)  REFERENCES pedidos(id)   ON DELETE CASCADE,
+  FOREIGN KEY (produto_id) REFERENCES produtos(id)  ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_itens_pedido_pedido  ON itens_pedido(pedido_id);
+CREATE INDEX idx_itens_pedido_produto ON itens_pedido(produto_id);
+
+-- =========================
+-- ENDEREÇOS (composição)
+-- =========================
+-- Cada Endereco "existe" apenas com seu dono.
+CREATE TABLE enderecos_cliente (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  cliente_id  INTEGER NOT NULL,
+  cep         TEXT    NOT NULL,
+  rua         TEXT    NOT NULL,
+  numero      INTEGER NOT NULL,
+  complemento TEXT,
+  bairro      TEXT    NOT NULL,
+  cidade      TEXT    NOT NULL,
+  uf          TEXT    NOT NULL,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_end_cli_cliente ON enderecos_cliente(cliente_id);
+CREATE INDEX idx_end_cli_cep     ON enderecos_cliente(cep);
+
+CREATE TABLE enderecos_restaurante (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  restaurante_id INTEGER NOT NULL,
+  cep            TEXT    NOT NULL,
+  rua            TEXT    NOT NULL,
+  numero         INTEGER NOT NULL,
+  complemento    TEXT,
+  bairro         TEXT    NOT NULL,
+  cidade         TEXT    NOT NULL,
+  uf             TEXT    NOT NULL,
+  created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_end_res_restaurante ON enderecos_restaurante(restaurante_id);
+CREATE INDEX idx_end_res_cep         ON enderecos_restaurante(cep);
+
+-- =========================
+-- OPCIONAL: VIEW de itens com informações do produto
+-- =========================
+CREATE VIEW IF NOT EXISTS vw_itens_pedido_detalhe AS
+SELECT
+  i.id,
+  i.pedido_id,
+  i.produto_id,
+  p.nome    AS produto_nome,
+  i.quantidade,
+  i.preco_unitario,
+  i.preco_total
+FROM itens_pedido i
+JOIN produtos p ON p.id = i.produto_id;
