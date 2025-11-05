@@ -1,8 +1,8 @@
 Dependências entre as classes:
 
-Cliente <-> Pedido = Associação Bidirecional
+Cliente <-> Pedido = Associação(bidirecional)
 Cliente -> Endereço = Composição
 Restaurante -> Endereço = Composição
-Produto -> ItemPedido = Agregação
+Produto -> ItemPedido = Associação
 Pedido -> ItemPedido = Composição
-Restaurante -> Pedido = Associação Bidrecional
+Restaurante -> Pedido = Associação

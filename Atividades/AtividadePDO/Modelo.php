@@ -1,7 +1,5 @@
 <?php
 
-namespace AtividadePDO;
-
 abstract class Modelo {
     protected $id;
     public function getId() { return $this->id; }

@@ -1,9 +1,5 @@
 <?php
 
-namespace AtividadePDO;
-
-use AtividadePDO;
-
 class Conexao {
     private static $pdo = null;
     public static function conectar() {
