@@ -1,8 +1,10 @@
 Dependências entre as classes:
 
-Cliente <-> Pedido = Associação(bidirecional)
-Cliente -> Endereço = Composição
-Restaurante -> Endereço = Composição
-Produto -> ItemPedido = Associação
-Pedido -> ItemPedido = Composição
-Restaurante -> Pedido = Associação
+ENDEREÇO -> RESTAURANTE(COMPOSIÇÃO) // o endereço só existe por conta do restauratnte       
+ENDEREÇO -> CLIENTE(COMPOSIÇÃO), ENTRETANTO UM CLIENTE PODE TER VÁRIOS ENDEREÇOS daí tem uma tabela de relação
+PRODUTO -> RESTAURANTE(COMPOSIÇÃO) se apagar o restaurante apaga os produtos        
+PRODUTO -> INGREDIENTE(COMPOSIÇÃO) se apaga os produtos, apaga os ingredientes
+PEDIDO -> CLIENTE(ASSOCIAÇÃO) cliente pode existir sem o produtos
+PEDIDO -> RESTAURANTE(AGREGAÇÃO) um restaurante faz parte do pedido, mas pode existir sem o outro 
+PRODUTO -> ITEMPEDIDO(AGREGAÇÃO) um
+PEDIDO -> ITEMPEDIDO(COMPOSIÇÃO) //um item só existe com o peido    

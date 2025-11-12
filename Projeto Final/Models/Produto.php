@@ -2,83 +2,34 @@
 
 require_once "Repository.php";
 require_once "Modelo.php";
+require_once "Restaurante.php";
 
 class Produto extends Modelo implements Repository
 {
-    private $nome;
-    private $descricao;
-    private $preco;
-    private $ingredientes = [];
+    private string $nome;
+    private ?string $descricao = null;
+    private Restaurante $restaurante;
+    private array $ingredientes = [];
 
-    public function validar() {
+    public function validar(): void {}
 
-    }
+    public function salvar(object $obj): void {}
+    public function listar(): array { return []; }
+    public function buscarPorId(int $id): ?object { return null; }
+    public function atualizar(object $obj): void {}
+    public function deletar(int $id): void {}
 
-    public function salvar($obj) {
+    public function getNome(): string { return $this->nome; }
+    public function setNome(string $nome): void { $this->nome = $nome; }
 
-    }
+    public function getDescricao(): ?string { return $this->descricao; }
+    public function setDescricao(?string $descricao): void { $this->descricao = $descricao; }
 
-    public function listar() {
+    public function getRestaurante(): Restaurante { return $this->restaurante; }
+    public function setRestaurante(Restaurante $restaurante): void { $this->restaurante = $restaurante; }
 
-    }
+    public function getIngredientes(): array { return $this->ingredientes; }
 
-    public function buscarPorId($id) {
-
-    }
-
-    public function atualizar($obj) {
-
-    }
-
-    public function deletar($id) {
-
-    }
-
-    public function addIngrediente($ingrediente)
-    {
-    }
-
-    public function removerIngrediente($ingrediente)
-    {
-    }
-
-    public function getNome()
-    {
-        return $this->nome;
-    }
-
-    public function setNome($nome): void
-    {
-        $this->nome = $nome;
-    }
-
-    public function getDescricao()
-    {
-        return $this->descricao;
-    }
-
-    public function setDescricao($descricao): void
-    {
-        $this->descricao = $descricao;
-    }
-
-    public function getPreco()
-    {
-        return $this->preco;
-    }
-
-    public function setPreco($preco): void
-    {
-        $this->preco = $preco;
-    }
-
-    public function getIngredientes(): array
-    {
-        return $this->ingredientes;
-    }
-
-    public function setIngredientes(array $ingredientes): void
-    {
-        $this->ingredientes = $ingredientes;
-    }
+    public function adicionarIngrediente(string $nome): IngredienteProduto {}
+    public function removerIngrediente(IngredienteProduto $ingrediente): void {}
 }

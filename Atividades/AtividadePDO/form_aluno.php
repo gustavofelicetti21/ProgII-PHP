@@ -1,157 +1,347 @@
 <?php
-require_once __DIR__ . "/Aluno.php";
+require_once "Aluno.php";
 
-$repo = new Aluno();
+$aluno = null;
+$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$mensagem = '';
+$tipoMensagem = '';
 
-$errors = [];
-$success = null;
-
-// Modo edição: carrega dados
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$data = ['id' => '', 'nome' => '', 'idade' => '', 'email' => '', 'curso' => ''];
-
-if ($id > 0) {
-    $row = $repo->buscarPorId($id);
-    if ($row) {
-        $data = $row;
-    } else {
-        $errors[] = "Aluno não encontrado.";
-    }
-}
-
-// Submit (criar/atualizar)
+// Processar formulário
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id    = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    $nome  = trim($_POST['nome'] ?? '');
-    $idade = (int)($_POST['idade'] ?? 0);
-    $email = trim($_POST['email'] ?? '');
-    $curso = trim($_POST['curso'] ?? '');
-
-    // validação server-side básica
-    if ($nome === '')  $errors[] = "Nome é obrigatório.";
-    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "E-mail inválido.";
-    if ($idade <= 0) $errors[] = "Idade deve ser maior que zero.";
-    if ($curso === '') $errors[] = "Curso é obrigatório.";
-
-    if (!$errors) {
-        // monta objeto Aluno para salvar/atualizar
-        $al = new Aluno();
-        if ($id) $al->setId($id);
-        $al->setNome($nome);
-        $al->setIdade($idade);
-        $al->setEmail($email);
-        $al->setCurso($curso);
-
-        try {
-            if ($id) {
-                $repo->atualizar($al);
-                $success = "Aluno atualizado com sucesso.";
-            } else {
-                $repo->salvar($al);
-                $success = "Aluno cadastrado com sucesso.";
-                $id = $al->getId(); // atualiza ID para permanecer na página em modo edição, se quiser
-            }
-            // recarrega dados exibidos no form
-            $data = [
-                'id' => $al->getId(),
-                'nome' => $al->getNome(),
-                'idade' => $al->getIdade(),
-                'email' => $al->getEmail(),
-                'curso' => $al->getCurso(),
-            ];
-        } catch (Throwable $e) {
-            $errors[] = "Erro ao salvar: " . $e->getMessage();
+    try {
+        $alunoObj = new Aluno();
+        
+        if (!empty($_POST['id'])) {
+            // Modo edição
+            $alunoObj->setId((int)$_POST['id']);
+            $alunoObj->setNome(trim($_POST['nome']));
+            $alunoObj->setIdade((int)$_POST['idade']);
+            $alunoObj->setEmail(trim($_POST['email']));
+            $alunoObj->setCurso(trim($_POST['curso']));
+            
+            $alunoObj->atualizar($alunoObj);
+            $mensagem = "Aluno atualizado com sucesso!";
+            $tipoMensagem = "success";
+            // Recarregar dados atualizados
+            $aluno = $alunoObj->buscarPorId($alunoObj->getId());
+        } else {
+            // Modo criação
+            $alunoObj->setNome(trim($_POST['nome']));
+            $alunoObj->setIdade((int)$_POST['idade']);
+            $alunoObj->setEmail(trim($_POST['email']));
+            $alunoObj->setCurso(trim($_POST['curso']));
+            
+            $alunoObj->salvar($alunoObj);
+            header("Location: form_aluno.php?sucesso=1");
+            exit;
         }
+    } catch (Exception $e) {
+        $mensagem = $e->getMessage();
+        $tipoMensagem = "error";
     }
 }
 
-function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-?>
-<!doctype html>
-<html lang="pt-br">
-<head>
-    <meta charset="utf-8">
-    <title><?php echo $data['id'] ? "Editar Aluno #".h($data['id']) : "Cadastrar Aluno"; ?></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body{font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:820px;margin:24px auto;padding:0 16px}
-        .box{border:1px solid #ddd;border-radius:8px;padding:16px;margin-top:16px}
-        .row{display:flex;gap:12px;flex-wrap:wrap}
-        .col{flex:1 1 240px;min-width:240px}
-        label{display:block;margin:8px 0 4px;font-weight:600}
-        input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px}
-        .actions{margin-top:16px;display:flex;gap:8px}
-        .btn{padding:10px 14px;border:1px solid #0a7;border-radius:6px;background:#0a7;color:#fff;cursor:pointer}
-        .btn.sec{background:#fff;color:#0a7}
-        .msg{padding:10px 12px;border-radius:6px;margin-bottom:12px}
-        .ok{background:#e8fff1;border:1px solid #78d39b}
-        .err{background:#fff0f0;border:1px solid #e3a3a3}
-    </style>
-    <script>
-        // Validação client-side simples
-        function valida(e){
-            const f = e.target;
-            const nome  = f.nome.value.trim();
-            const idade = parseInt(f.idade.value, 10);
-            const email = f.email.value.trim();
-            const curso = f.curso.value.trim();
-
-            let erros = [];
-            if(!nome) erros.push("Nome é obrigatório.");
-            if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) erros.push("E-mail inválido.");
-            if(!(idade > 0)) erros.push("Idade deve ser maior que zero.");
-            if(!curso) erros.push("Curso é obrigatório.");
-
-            if(erros.length){
-                alert(erros.join("\n"));
-                e.preventDefault();
-            }
+// Verificar se é modo de edição
+if ($id) {
+    try {
+        $alunoObj = new Aluno();
+        $aluno = $alunoObj->buscarPorId($id);
+        if (!$aluno) {
+            $mensagem = "Aluno não encontrado!";
+            $tipoMensagem = "error";
+            $id = null;
         }
-        window.addEventListener('DOMContentLoaded',()=>{
-            document.getElementById('fAluno').addEventListener('submit',valida);
-        });
-    </script>
+    } catch (Exception $e) {
+        $mensagem = $e->getMessage();
+        $tipoMensagem = "error";
+    }
+}
+
+// Verificar mensagem de sucesso via GET
+if (isset($_GET['sucesso']) && $_GET['sucesso'] == 1) {
+    $mensagem = "Aluno cadastrado com sucesso!";
+    $tipoMensagem = "success";
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $id ? 'Editar' : 'Cadastrar'; ?> Aluno</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .required {
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1><?php echo $id ? 'Editar Aluno' : 'Cadastrar Novo Aluno'; ?></h1>
+            <p>Preencha os dados abaixo</p>
+        </div>
 
-<h1><?php echo $data['id'] ? "Editar Aluno" : "Cadastrar Aluno"; ?></h1>
+        <div class="form-container">
+            <?php if ($mensagem): ?>
+                <div class="alert alert-<?php echo $tipoMensagem === 'success' ? 'success' : 'error'; ?>">
+                    <?php echo htmlspecialchars($mensagem); ?>
+                </div>
+            <?php endif; ?>
 
-<?php if ($success): ?>
-    <div class="msg ok"><?php echo h($success); ?></div>
-<?php endif; ?>
-<?php if ($errors): ?>
-    <div class="msg err">
-        <?php foreach ($errors as $er) echo "<div>".h($er)."</div>"; ?>
+            <form id="formAluno" method="POST" action="" novalidate>
+                <?php if ($id && $aluno): ?>
+                    <input type="hidden" name="id" value="<?php echo htmlspecialchars($aluno->getId()); ?>">
+                <?php endif; ?>
+
+                <div class="form-group">
+                    <label for="nome">Nome <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="nome" 
+                        name="nome" 
+                        value="<?php echo $aluno ? htmlspecialchars($aluno->getNome()) : ''; ?>" 
+                        required 
+                        minlength="3"
+                        maxlength="100"
+                    >
+                    <small>Mínimo de 3 caracteres</small>
+                    <div class="error-message" id="nome-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="idade">Idade <span class="required">*</span></label>
+                    <input 
+                        type="number" 
+                        id="idade" 
+                        name="idade" 
+                        value="<?php echo $aluno ? htmlspecialchars($aluno->getIdade()) : ''; ?>" 
+                        required 
+                        min="16" 
+                        max="100"
+                    >
+                    <small>Entre 16 e 100 anos</small>
+                    <div class="error-message" id="idade-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        value="<?php echo $aluno ? htmlspecialchars($aluno->getEmail()) : ''; ?>" 
+                        required
+                        maxlength="100"
+                    >
+                    <small>Email válido e único</small>
+                    <div class="error-message" id="email-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="curso">Curso <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="curso" 
+                        name="curso" 
+                        value="<?php echo $aluno ? htmlspecialchars($aluno->getCurso()) : ''; ?>" 
+                        required 
+                        maxlength="50"
+                    >
+                    <small>Nome do curso do aluno</small>
+                    <div class="error-message" id="curso-error"></div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">
+                        <?php echo $id ? 'Atualizar' : 'Cadastrar'; ?>
+                    </button>
+                    <a href="listar_alunos.php" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
     </div>
-<?php endif; ?>
 
-<div class="box">
-    <form id="fAluno" method="post" action="">
-        <input type="hidden" name="id" value="<?php echo h($data['id']); ?>">
-        <div class="row">
-            <div class="col">
-                <label for="nome">Nome</label>
-                <input id="nome" name="nome" type="text" required value="<?php echo h($data['nome']); ?>">
-            </div>
-            <div class="col">
-                <label for="idade">Idade</label>
-                <input id="idade" name="idade" type="number" min="1" required value="<?php echo h($data['idade']); ?>">
-            </div>
-            <div class="col">
-                <label for="email">E-mail</label>
-                <input id="email" name="email" type="email" required value="<?php echo h($data['email']); ?>">
-            </div>
-            <div class="col">
-                <label for="curso">Curso</label>
-                <input id="curso" name="curso" type="text" required value="<?php echo h($data['curso']); ?>">
-            </div>
-        </div>
-        <div class="actions">
-            <button class="btn" type="submit"><?php echo $data['id'] ? "Salvar alterações" : "Cadastrar"; ?></button>
-            <a class="btn sec" href="listar_alunos.php">Voltar à lista</a>
-        </div>
-    </form>
-</div>
-
+    <script>
+        // Validação client-side
+        document.getElementById('formAluno').addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Limpar erros anteriores
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            
+            // Validar nome
+            const nome = document.getElementById('nome').value.trim();
+            if (nome.length < 3) {
+                document.getElementById('nome-error').textContent = 'Nome deve ter no mínimo 3 caracteres';
+                isValid = false;
+            }
+            
+            // Validar idade
+            const idade = parseInt(document.getElementById('idade').value);
+            if (isNaN(idade) || idade < 16 || idade > 100) {
+                document.getElementById('idade-error').textContent = 'Idade deve estar entre 16 e 100 anos';
+                isValid = false;
+            }
+            
+            // Validar email
+            const email = document.getElementById('email').value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('email-error').textContent = 'Email inválido';
+                isValid = false;
+            }
+            
+            // Validar curso
+            const curso = document.getElementById('curso').value.trim();
+            if (curso.length === 0) {
+                document.getElementById('curso-error').textContent = 'Curso é obrigatório';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>
+
